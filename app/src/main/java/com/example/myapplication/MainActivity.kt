@@ -8,13 +8,18 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.text.TextUtils
 import android.util.Log
 import android.widget.Button
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.google.android.material.snackbar.Snackbar
+import com.google.firebase.analytics.ktx.analytics
+import com.google.firebase.ktx.Firebase
+import com.google.firebase.messaging.FirebaseMessaging
 
 /**
  * @author Nav Singh
@@ -33,6 +38,8 @@ class MainActivity : AppCompatActivity() {
             // Permission is granted. Continue the action or workflow in your
             // app.
         } else {
+            sendNotification(this)
+
             // Explain to the user that the feature is unavailable because the
             // features requires a permission that the user has denied. At the
             // same time, respect the user's decision. Don't link to system
@@ -41,9 +48,13 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        Firebase.analytics
+
         val message = intent?.getStringExtra(NOTIFICATION_MESSAGE_TAG)
         findViewById<TextView>(R.id.tv_message).text = message
         findViewById<Button>(R.id.click).setOnClickListener {
@@ -56,6 +67,8 @@ class MainActivity : AppCompatActivity() {
                     sendNotification(this)
                 }
                 shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS) -> {
+                    sendNotification(this)
+
                     Snackbar.make(
                         findViewById(R.id.parent_layout),
                         "Notification blocked",
@@ -82,6 +95,20 @@ class MainActivity : AppCompatActivity() {
                    // }
                 }
             }
+        }
+        
+        FirebaseMessaging.getInstance().token.addOnSuccessListener {
+            if (!TextUtils.isEmpty(it)) {
+                Log.d(TAG, "retrieve token successful : " + it);
+            } else{
+                Log.w(TAG, "token should not be null...");
+            }
+        }.addOnFailureListener {
+            Log.w(TAG, "token fail");
+        }.addOnCanceledListener {
+            Log.w(TAG, "token cancel");
+        }.addOnCompleteListener {
+            Log.v(TAG, "This is the token : " + it.result)
         }
     }
 
